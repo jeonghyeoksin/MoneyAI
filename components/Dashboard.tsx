@@ -34,7 +34,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
          <div className="relative z-10 space-y-8">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-slate-100 via-amber-200 to-amber-500 leading-tight tracking-tight drop-shadow-sm">
-              "아무일도 하지 않으면 <br /> 아무일도 일어나지 않는다"
+              "아무것도 하지 않으면 <br /> 아무것도 일어나지 않는다"
             </h1>
             <p className="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto font-light leading-relaxed">
               성공을 위한 가장 확실한 방법은 지금 바로 시작하는 것입니다.<br/>
@@ -65,12 +65,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               
               {/* Large Watermark Icon */}
               <div className="absolute -right-6 -bottom-6 opacity-0 group-hover:opacity-5 transition-all duration-500 rotate-[-15deg] transform scale-0 group-hover:scale-150 origin-bottom-right">
-                {React.cloneElement(item.icon as React.ReactElement, { size: 120, className: 'text-white' })}
+                {React.cloneElement(item.icon as React.ReactElement<any>, { size: 120, className: 'text-white' })}
               </div>
 
               <div className="flex items-center justify-between mb-6 relative z-10">
                 <div className="w-14 h-14 bg-slate-800 group-hover:bg-gradient-to-br group-hover:from-amber-500 group-hover:to-orange-600 rounded-2xl flex items-center justify-center transition-all duration-300 border border-slate-700 group-hover:border-transparent shadow-lg group-hover:shadow-amber-900/50">
-                   {React.cloneElement(item.icon as React.ReactElement, { 
+                   {React.cloneElement(item.icon as React.ReactElement<any>, { 
                     className: 'text-slate-400 group-hover:text-white transition-colors duration-300',
                     size: 28
                   })}

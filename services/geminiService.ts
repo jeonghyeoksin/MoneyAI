@@ -2,6 +2,15 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { ProductConcept, HookCopyResult, DetailPageSection } from "../types";
 import { getActiveApiKey } from "./apiKeyService";
 
+declare global {
+  interface Window {
+    aistudio?: {
+      hasSelectedApiKey?: () => Promise<boolean>;
+      openSelectKey?: () => Promise<void>;
+    };
+  }
+}
+
 // Helper to check for Veo Key selection
 export const checkAndSelectApiKey = async (): Promise<boolean> => {
   if (window.aistudio && window.aistudio.hasSelectedApiKey) {
@@ -179,16 +188,16 @@ export const generateYoutubePlan = async (topic: string): Promise<string> => {
   return response.text || "생성 실패";
 };
 
-export const generateImage = async (prompt: string, aspectRatio: string = "1:1", refImageBase64?: string): Promise<string | null> => {
+export const generateImage = async (prompt: string, aspectRatio: string = "1:1", refImageBase64?: string, mimeType: string = 'image/png'): Promise<string | null> => {
   const apiKey = getActiveApiKey();
   if (!apiKey) throw new Error("API Key is missing");
   const ai = new GoogleGenAI({ apiKey });
   
-  // Force high quality model "Nano Banana Pro" (mapped to gemini-3-pro-image-preview)
-  const modelName = 'gemini-3-pro-image-preview';
+  // Force high quality model "Nano Banana Pro" (mapped to gemini-2.5-flash-image for reliability)
+  const modelName = 'gemini-2.5-flash-image';
   
   // Enhance prompt for text rendering and consistency
-  let finalPrompt = `${prompt}, Nano Banana Pro 3.0 style, commercial photography, 8k, photorealistic`;
+  let finalPrompt = `${prompt}, commercial photography, 8k, photorealistic`;
   
   if (prompt.includes('Text "')) {
       // Add modifiers for layout and typography to support multi-line text
@@ -203,7 +212,7 @@ export const generateImage = async (prompt: string, aspectRatio: string = "1:1",
   if (refImageBase64) {
       parts.unshift({
           inlineData: {
-              mimeType: 'image/png',
+              mimeType: mimeType,
               data: refImageBase64
           }
       });
@@ -318,7 +327,7 @@ export const planProductConcepts = async (base64Image: string): Promise<ProductC
   }
 };
 
-export const generateProductShot = async (base64Image: string, conceptPrompt: string): Promise<string | null> => {
+export const generateProductShot = async (base64Image: string, conceptPrompt: string, mimeType: string = 'image/png'): Promise<string | null> => {
   const apiKey = getActiveApiKey();
   if (!apiKey) throw new Error("API Key is missing");
   const ai = new GoogleGenAI({ apiKey });
@@ -338,17 +347,16 @@ export const generateProductShot = async (base64Image: string, conceptPrompt: st
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-image-preview', // High quality model for 1K generation
+      model: 'gemini-2.5-flash-image', // Use reliable default model
       contents: {
         parts: [
-          { inlineData: { mimeType: 'image/png', data: base64Image } },
+          { inlineData: { mimeType: mimeType, data: base64Image } },
           { text: fullPrompt }
         ]
       },
       config: {
         imageConfig: {
           aspectRatio: '1:1',
-          imageSize: '1K', // Requesting 1000x1000 approx
         }
       }
     });
@@ -460,7 +468,7 @@ export const researchProductInfo = async (productName: string): Promise<string |
 export const planDetailPage = async (
   productName: string,
   productInfo: string,
-  refImages: string[], 
+  refImages: { base64: string, mimeType: string }[], 
   mode: 'AUTO' | 'MANUAL', 
   count?: number
 ): Promise<DetailPageSection[]> => {
@@ -524,11 +532,11 @@ export const planDetailPage = async (
   const parts: any[] = [{ text: userPrompt }];
   
   // Add reference images to prompt parts
-  refImages.forEach(imgData => {
+  refImages.forEach(img => {
     parts.push({
       inlineData: {
-        mimeType: 'image/png', // Assume generic image type, API handles standard formats
-        data: imgData
+        mimeType: img.mimeType,
+        data: img.base64
       }
     });
   });

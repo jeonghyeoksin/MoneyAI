@@ -79,10 +79,14 @@ const DetailPageGenerator: React.FC = () => {
     setGeneratedImages({});
     
     try {
-      // Filter out empty slots and strip prefix for API if needed (geminiService handles parts)
+      // Filter out empty slots and extract base64 + mimeType
       const validImages = refImages
         .filter(img => img !== '')
-        .map(img => img.split(',')[1]); // Remove "data:image/png;base64," prefix
+        .map(img => {
+          const [header, base64] = img.split(',');
+          const mimeType = header.match(/:(.*?);/)?.[1] || 'image/png';
+          return { base64, mimeType };
+        });
 
       const sections = await planDetailPage(productName, productInfo, validImages, mode, manualCount);
       setPlan(sections);
@@ -98,10 +102,18 @@ const DetailPageGenerator: React.FC = () => {
     setGeneratingImages(prev => ({ ...prev, [index]: true }));
     try {
       // Use the first reference image as the guide for 100% consistency if available
-      const refImage = refImages.find(img => img !== '')?.split(',')[1];
+      const refImgData = refImages.find(img => img !== '');
+      let refBase64 = undefined;
+      let refMimeType = 'image/png';
+
+      if (refImgData) {
+        const [header, base64] = refImgData.split(',');
+        refBase64 = base64;
+        refMimeType = header.match(/:(.*?);/)?.[1] || 'image/png';
+      }
 
       // Use "3:4" as it's the closest vertical ratio to 2:3 supported by the API enum
-      const imageUrl = await generateImage(prompt, "3:4", refImage); 
+      const imageUrl = await generateImage(prompt, "3:4", refBase64, refMimeType); 
       if (imageUrl) {
         setGeneratedImages(prev => ({ ...prev, [index]: imageUrl }));
       }

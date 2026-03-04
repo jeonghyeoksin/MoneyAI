@@ -8,6 +8,11 @@ interface GeneratedResult {
   imageUrl: string | null;
 }
 
+interface ImageData {
+  base64: string;
+  mimeType: string;
+}
+
 const ProductPhotographer: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -30,15 +35,15 @@ const ProductPhotographer: React.FC = () => {
     }
   };
 
-  const convertToBase64 = (file: File): Promise<string> => {
+  const convertToImageData = (file: File): Promise<ImageData> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => {
         const result = reader.result as string;
-        // Remove data:image/xxx;base64, prefix
-        const base64Data = result.split(',')[1];
-        resolve(base64Data);
+        const mimeType = file.type || 'image/png';
+        const base64 = result.split(',')[1];
+        resolve({ base64, mimeType });
       };
       reader.onerror = error => reject(error);
     });
@@ -53,11 +58,11 @@ const ProductPhotographer: React.FC = () => {
     try {
       // 1. Convert Image
       setProgress('이미지를 분석하고 있습니다...');
-      const base64Image = await convertToBase64(selectedFile);
+      const imageData = await convertToImageData(selectedFile);
 
       // 2. Plan Concepts
       setProgress('제품에 어울리는 5가지 컨셉을 기획 중입니다...');
-      const concepts = await planProductConcepts(base64Image);
+      const concepts = await planProductConcepts(imageData.base64);
       
       if (concepts.length === 0) {
         throw new Error("컨셉 기획에 실패했습니다.");
@@ -66,7 +71,7 @@ const ProductPhotographer: React.FC = () => {
       // 3. Generate Images (Parallel)
       setProgress('스튜디오 촬영을 진행 중입니다... (최대 1분 소요)');
       const generationPromises = concepts.map(async (concept) => {
-        const imageUrl = await generateProductShot(base64Image, concept.prompt);
+        const imageUrl = await generateProductShot(imageData.base64, concept.prompt, imageData.mimeType);
         return { concept, imageUrl };
       });
 
