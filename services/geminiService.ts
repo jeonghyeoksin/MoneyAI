@@ -189,19 +189,22 @@ export const generateYoutubePlan = async (topic: string): Promise<string> => {
 };
 
 export const generateImage = async (prompt: string, aspectRatio: string = "1:1", refImageBase64?: string, mimeType: string = 'image/png'): Promise<string | null> => {
+  // CRITICAL: gemini-3.1-flash-image-preview requires specific key selection in some environments
+  await checkAndSelectApiKey();
+
   const apiKey = getActiveApiKey();
   if (!apiKey) throw new Error("API Key is missing");
   const ai = new GoogleGenAI({ apiKey });
   
-  // Force high quality model "Nano Banana Pro" (mapped to gemini-2.5-flash-image for reliability)
-  const modelName = 'gemini-2.5-flash-image';
+  // Force high quality model "Nano Banana Pro" (mapped to gemini-3.1-flash-image-preview for reliability)
+  const modelName = 'gemini-3.1-flash-image-preview';
   
   // Enhance prompt for text rendering and consistency
   let finalPrompt = `${prompt}, commercial photography, 8k, photorealistic`;
   
   if (prompt.includes('Text "')) {
       // Add modifiers for layout and typography to support multi-line text
-      finalPrompt += ", professional typography, advertising poster style, clear text rendering, legible font, high contrast text";
+      finalPrompt += ", professional Korean typography, advertising poster style, clear Korean text rendering, legible Korean font, high contrast text, absolutely no broken characters or typos";
   }
     
   if (refImageBase64) {
@@ -328,6 +331,9 @@ export const planProductConcepts = async (base64Image: string): Promise<ProductC
 };
 
 export const generateProductShot = async (base64Image: string, conceptPrompt: string, mimeType: string = 'image/png'): Promise<string | null> => {
+  // CRITICAL: gemini-3.1-flash-image-preview requires specific key selection in some environments
+  await checkAndSelectApiKey();
+
   const apiKey = getActiveApiKey();
   if (!apiKey) throw new Error("API Key is missing");
   const ai = new GoogleGenAI({ apiKey });
@@ -347,7 +353,7 @@ export const generateProductShot = async (base64Image: string, conceptPrompt: st
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image', // Use reliable default model
+      model: 'gemini-3.1-flash-image-preview', // Use high quality preview model
       contents: {
         parts: [
           { inlineData: { mimeType: mimeType, data: base64Image } },
@@ -493,9 +499,9 @@ export const planDetailPage = async (
     [GENERATION RULES]
     1. **Korean Text Only**: All 'copy' fields MUST be written in natural, persuasive, high-converting Korean. No English in the copy.
     2. **Multi-line Korean Text in Images**: Every generated image MUST include **at least two lines** of Korean text overlay (e.g., Headline + Subtext).
-       - In the 'imagePrompt' field, you MUST explicitly include instructions to render this text clearly.
-       - Format: 'Text "HEADLINE_TEXT" and "SUB_TEXT" are written in the [position] in a [style] font.'
-       - Example: 'Text "압도적 흡입력" and "먼지 걱정 끝" are written in bold Korean font.'
+       - In the 'imagePrompt' field, you MUST explicitly include instructions to render this text clearly without any broken characters.
+       - Format: 'Text "HEADLINE_TEXT" and "SUB_TEXT" are written clearly in the [position] in a [style] Korean font, perfect Korean typography, no broken text.'
+       - Example: 'Text "압도적 흡입력" and "먼지 걱정 끝" are written clearly in bold Korean font, perfect Korean typography, no broken text.'
        - Keep each line short (2-5 words) but ensure there are multiple lines to convey the message effectively.
     3. **Visual Consistency**: The 'imagePrompt' must be extremely detailed to ensure the product looks exactly like the reference. Describe the product's shape, color, and material from the reference image in the prompt.
     4. **Design**: The 'designIntent' should specify a layout that fits a vertical (2:3 aspect ratio) scroll mobile view (e.g., "Poster layout with text at the top and product at bottom").
