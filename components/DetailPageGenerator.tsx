@@ -90,9 +90,9 @@ const DetailPageGenerator: React.FC = () => {
 
       const sections = await planDetailPage(productName, productInfo, validImages, mode, manualCount);
       setPlan(sections);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("기획안 생성 중 오류가 발생했습니다.");
+      alert(`기획안 생성 중 오류가 발생했습니다: ${e.message || '알 수 없는 오류'}`);
     } finally {
       setIsPlanning(false);
     }
@@ -117,9 +117,9 @@ const DetailPageGenerator: React.FC = () => {
       if (imageUrl) {
         setGeneratedImages(prev => ({ ...prev, [index]: imageUrl }));
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert(`섹션 ${index+1} 이미지 생성 실패`);
+      alert(`섹션 ${index+1} 이미지 생성 실패: ${e.message || 'API 오류'}`);
     } finally {
       setGeneratingImages(prev => ({ ...prev, [index]: false }));
     }

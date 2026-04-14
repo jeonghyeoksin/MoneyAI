@@ -177,33 +177,31 @@ export const generateYoutubePlan = async (topic: string): Promise<string> => {
     4. 촬영 및 편집 포인트
   `;
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
-    contents: prompt,
-    config: {
-        thinkingConfig: { thinkingBudget: 1024 }
-    }
-  });
-
-  return response.text || "생성 실패";
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview', // Use flash for better compatibility
+      contents: prompt,
+    });
+    return response.text || "생성 실패";
+  } catch (e) {
+    console.error("Youtube plan generation failed", e);
+    throw e;
+  }
 };
 
 export const generateImage = async (prompt: string, aspectRatio: string = "1:1", refImageBase64?: string, mimeType: string = 'image/png'): Promise<string | null> => {
-  // CRITICAL: gemini-3.1-flash-image-preview requires specific key selection in some environments
   await checkAndSelectApiKey();
-
   const apiKey = getActiveApiKey();
   if (!apiKey) throw new Error("API Key is missing");
   const ai = new GoogleGenAI({ apiKey });
   
-  // Force high quality model "Nano Banana Pro" (mapped to gemini-3.1-flash-image-preview for reliability)
-  const modelName = 'gemini-3.1-flash-image-preview';
+  // Reverting to gemini-2.5-flash-image for stability as 3.1-flash-image-preview often returns 403
+  const modelName = 'gemini-2.5-flash-image';
   
   // Enhance prompt for text rendering and consistency
   let finalPrompt = `${prompt}, commercial photography, 8k, photorealistic`;
   
   if (prompt.includes('Text "')) {
-      // Add modifiers for layout and typography to support multi-line text
       finalPrompt += ", professional Korean typography, advertising poster style, clear Korean text rendering, legible Korean font, high contrast text, absolutely no broken characters or typos";
   }
     
@@ -221,22 +219,27 @@ export const generateImage = async (prompt: string, aspectRatio: string = "1:1",
       });
   }
 
-  const response = await ai.models.generateContent({
-    model: modelName,
-    contents: {
-      parts: parts
-    },
-    config: {
-      imageConfig: {
-        aspectRatio: aspectRatio as any, 
+  try {
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: {
+        parts: parts
+      },
+      config: {
+        imageConfig: {
+          aspectRatio: aspectRatio as any,
+        }
+      }
+    });
+
+    for (const part of response.candidates?.[0]?.content?.parts || []) {
+      if (part.inlineData) {
+        return `data:image/png;base64,${part.inlineData.data}`;
       }
     }
-  });
-
-  for (const part of response.candidates?.[0]?.content?.parts || []) {
-    if (part.inlineData) {
-      return `data:image/png;base64,${part.inlineData.data}`;
-    }
+  } catch (e) {
+    console.error("Image generation failed", e);
+    throw e;
   }
   return null;
 };
@@ -295,45 +298,43 @@ export const planProductConcepts = async (base64Image: string): Promise<ProductC
     Array of objects: { "title": string, "description": string, "prompt": string }
   `;
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents: {
-      parts: [
-        { inlineData: { mimeType: 'image/png', data: base64Image } },
-        { text: prompt }
-      ]
-    },
-    config: {
-      responseMimeType: 'application/json',
-      responseSchema: {
-        type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            title: { type: Type.STRING },
-            description: { type: Type.STRING },
-            prompt: { type: Type.STRING },
-          },
-          required: ['title', 'description', 'prompt']
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview', // Use flash for better compatibility
+      contents: {
+        parts: [
+          { inlineData: { mimeType: 'image/png', data: base64Image } },
+          { text: prompt }
+        ]
+      },
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              title: { type: Type.STRING },
+              description: { type: Type.STRING },
+              prompt: { type: Type.STRING },
+            },
+            required: ['title', 'description', 'prompt']
+          }
         }
       }
-    }
-  });
+    });
 
-  const text = response.text;
-  if (!text) return [];
-  try {
+    const text = response.text;
+    if (!text) return [];
     return JSON.parse(text);
   } catch (e) {
     console.error("Failed to parse concept plan", e);
-    return [];
+    throw e;
   }
 };
 
 export const generateProductShot = async (base64Image: string, conceptPrompt: string, mimeType: string = 'image/png'): Promise<string | null> => {
-  // CRITICAL: gemini-3.1-flash-image-preview requires specific key selection in some environments
   await checkAndSelectApiKey();
-
   const apiKey = getActiveApiKey();
   if (!apiKey) throw new Error("API Key is missing");
   const ai = new GoogleGenAI({ apiKey });
@@ -353,7 +354,7 @@ export const generateProductShot = async (base64Image: string, conceptPrompt: st
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-flash-image-preview', // Use high quality preview model
+      model: 'gemini-2.5-flash-image', // Reverting to stable model
       contents: {
         parts: [
           { inlineData: { mimeType: mimeType, data: base64Image } },
@@ -374,6 +375,7 @@ export const generateProductShot = async (base64Image: string, conceptPrompt: st
     }
   } catch (e) {
     console.error("Image generation failed", e);
+    throw e;
   }
   return null;
 };
@@ -455,12 +457,10 @@ export const researchProductInfo = async (productName: string): Promise<string |
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3-flash-preview', // Use flash for better compatibility
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
-        // Provide reasoning budget for better synthesis of search results
-        thinkingConfig: { thinkingBudget: 1024 }
       }
     });
 
@@ -549,7 +549,7 @@ export const planDetailPage = async (
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview', // High reasoning model for planning with multimodal support
+      model: 'gemini-3-flash-preview', // Use flash for better compatibility
       contents: { parts },
       config: {
         systemInstruction: systemInstruction,
@@ -567,7 +567,6 @@ export const planDetailPage = async (
             required: ['sectionTitle', 'copy', 'designIntent', 'imagePrompt']
           }
         },
-        thinkingConfig: { thinkingBudget: 2048 } // Think about the best structure
       }
     });
 

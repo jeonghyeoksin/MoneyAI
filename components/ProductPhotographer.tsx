@@ -62,26 +62,45 @@ const ProductPhotographer: React.FC = () => {
 
       // 2. Plan Concepts
       setProgress('제품에 어울리는 5가지 컨셉을 기획 중입니다...');
-      const concepts = await planProductConcepts(imageData.base64);
+      let concepts: ProductConcept[] = [];
+      try {
+        concepts = await planProductConcepts(imageData.base64);
+      } catch (planError: any) {
+        console.error("Planning Error:", planError);
+        throw new Error(`컨셉 기획 중 오류가 발생했습니다: ${planError.message || 'API 응답 오류'}`);
+      }
       
-      if (concepts.length === 0) {
-        throw new Error("컨셉 기획에 실패했습니다.");
+      if (!concepts || concepts.length === 0) {
+        throw new Error("컨셉 기획 결과가 비어있습니다. 다시 시도해주세요.");
       }
 
       // 3. Generate Images (Parallel)
       setProgress('스튜디오 촬영을 진행 중입니다... (최대 1분 소요)');
-      const generationPromises = concepts.map(async (concept) => {
-        const imageUrl = await generateProductShot(imageData.base64, concept.prompt, imageData.mimeType);
-        return { concept, imageUrl };
+      const generationPromises = concepts.map(async (concept, idx) => {
+        try {
+          const imageUrl = await generateProductShot(imageData.base64, concept.prompt, imageData.mimeType);
+          return { concept, imageUrl };
+        } catch (genError: any) {
+          console.error(`Generation Error for concept ${idx}:`, genError);
+          return { concept, imageUrl: null }; // Return null for this specific image but don't crash the whole process
+        }
       });
 
       const generatedResults = await Promise.all(generationPromises);
       setResults(generatedResults);
-      setProgress('완료!');
+      
+      const successCount = generatedResults.filter(r => r.imageUrl).length;
+      if (successCount === 0) {
+        setProgress('이미지 생성 실패');
+        alert('모든 이미지 생성에 실패했습니다. API 키 권한이나 할당량을 확인해주세요.');
+      } else {
+        setProgress('완료!');
+      }
 
-    } catch (e) {
-      console.error(e);
-      alert('작업 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    } catch (e: any) {
+      console.error("Overall Error:", e);
+      const errorMessage = e.message || '알 수 없는 오류가 발생했습니다.';
+      alert(`작업 중 오류가 발생했습니다.\n\n상세 내용: ${errorMessage}\n\n잠시 후 다시 시도해주세요.`);
       setProgress('오류 발생');
     } finally {
       setIsProcessing(false);
