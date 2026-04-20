@@ -155,7 +155,7 @@ export const generateInstaCarousel = async (topic: string, count: number, style:
   `;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-1.5-pro',
+    model: 'gemini-3.1-pro-preview',
     contents: prompt,
   });
 
@@ -179,7 +179,7 @@ export const generateYoutubePlan = async (topic: string): Promise<string> => {
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-pro',
+      model: 'gemini-3.1-pro-preview',
       contents: prompt,
     });
     return response.text || "생성 실패";
@@ -195,8 +195,8 @@ export const generateImage = async (prompt: string, aspectRatio: string = "1:1",
   if (!apiKey) throw new Error("API Key is missing");
   const ai = new GoogleGenAI({ apiKey });
   
-  // Use gemini-1.5-flash for image generation if supported or standard imagen
-  const modelName = 'gemini-1.5-flash'; 
+  // Use gemini-3.1-flash-image-preview for high quality image generation and superior Korean text rendering
+  const modelName = 'gemini-3.1-flash-image-preview'; 
   
   // Enhance prompt for text rendering and consistency with extreme emphasis on Korean
   let finalPrompt = `${prompt}, commercial photography, 8k, photorealistic. 
@@ -271,7 +271,7 @@ export const generateVideo = async (config: {
     : config.prompt;
 
   let operation = await ai.models.generateVideos({
-    model: 'veo-3.1-fast-generate-preview',
+    model: 'veo-3.1-generate-preview',
     prompt: finalPrompt,
     config: {
       numberOfVideos: 1,
@@ -371,7 +371,7 @@ export const generateProductShot = async (base64Image: string, conceptPrompt: st
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash', 
+      model: 'gemini-3.1-flash-image-preview', 
       contents: {
         parts: [
           { inlineData: { mimeType: mimeType, data: base64Image } },
@@ -427,7 +427,7 @@ export const generateDetailHooks = async (productName: string): Promise<HookCopy
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-pro',
+      model: 'gemini-3.1-pro-preview',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
@@ -476,10 +476,11 @@ export const researchProductInfo = async (productName: string): Promise<string |
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-pro', // Use pro for better research quality
+      model: 'gemini-3.1-pro-preview', // Use pro for better research quality
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
+        toolConfig: { includeServerSideToolInvocations: true }
       }
     });
 
@@ -568,7 +569,7 @@ export const planDetailPage = async (
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-pro',
+      model: 'gemini-3.1-pro-preview',
       contents: { parts },
       config: {
         systemInstruction: systemInstruction,
