@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import ContentGenerator from './components/ContentGenerator';
@@ -12,8 +12,12 @@ import { ApiKeyStatus } from './services/apiKeyService';
 import { AppView } from './types';
 import { Lock, ArrowRight, AlertTriangle, Key } from 'lucide-react';
 
+const AUTH_STORAGE_KEY = 'money_maker_auth';
+
 const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return localStorage.getItem(AUTH_STORAGE_KEY) === 'true';
+  });
   const [accessKey, setAccessKey] = useState('');
   const [currentView, setCurrentView] = useState<AppView>(AppView.DASHBOARD);
   const [apiKeyStatus, setApiKeyStatus] = useState<ApiKeyStatus>(ApiKeyStatus.MISSING);
@@ -22,6 +26,7 @@ const App: React.FC = () => {
     e.preventDefault();
     if (accessKey === '1111') {
       setIsAuthenticated(true);
+      localStorage.setItem(AUTH_STORAGE_KEY, 'true');
     } else {
       alert('접근키가 올바르지 않습니다.');
       setAccessKey('');

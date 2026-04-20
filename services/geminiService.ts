@@ -242,10 +242,31 @@ export const generateImage = async (prompt: string, aspectRatio: string = "1:1",
       }
     }
   } catch (e: any) {
-    console.error("Image generation failed", e);
-    // If specific image model fails, try informative error
+    console.error("Image generation failed with model:", modelName, e);
+    
+    // Fallback logic for 403 Permission Denied
     if (e.message?.includes('403') || e.message?.includes('permission')) {
-        throw new Error("이미지 생성 권한이 없거나 유료 API 키가 필요합니다. (403 Permission Denied)");
+      if (modelName === 'gemini-3.1-flash-image-preview') {
+        console.warn("Falling back to gemini-2.5-flash-image due to permission error.");
+        try {
+          const fallbackResponse = await ai.models.generateContent({
+            model: 'gemini-2.5-flash-image',
+            contents: { parts: parts },
+            config: {
+              imageConfig: {
+                aspectRatio: aspectRatio as any,
+                imageSize: '1K'
+              }
+            }
+          });
+          for (const part of fallbackResponse.candidates?.[0]?.content?.parts || []) {
+            if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
+          }
+        } catch (fallbackError) {
+          console.error("Fallback image generation also failed:", fallbackError);
+        }
+      }
+      throw new Error("이미지 생성 권한이 없거나 지원하지 않는 모델입니다. AI Studio 설정에서 API 키를 확인해주세요. (403 Forbidden)");
     }
     throw e;
   }
@@ -270,26 +291,57 @@ export const generateVideo = async (config: {
     ? `${config.prompt}. Include professional Korean subtitles at the bottom of the screen.`
     : config.prompt;
 
-  let operation = await ai.models.generateVideos({
-    model: 'veo-3.1-generate-preview',
-    prompt: finalPrompt,
-    config: {
-      numberOfVideos: 1,
-      resolution: config.resolution as any,
-      aspectRatio: config.aspectRatio as any
+  let modelName = 'veo-3.1-generate-preview';
+  
+  try {
+    let operation = await ai.models.generateVideos({
+      model: modelName,
+      prompt: finalPrompt,
+      config: {
+        numberOfVideos: 1,
+        resolution: config.resolution as any,
+        aspectRatio: config.aspectRatio as any
+      }
+    });
+
+    while (!operation.done) {
+      await new Promise(resolve => setTimeout(resolve, 5000)); // Poll every 5s
+      operation = await ai.operations.getVideosOperation({operation: operation});
     }
-  });
 
-  while (!operation.done) {
-    await new Promise(resolve => setTimeout(resolve, 5000)); // Poll every 5s
-    operation = await ai.operations.getVideosOperation({operation: operation});
+    const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
+    if (!downloadLink) return null;
+
+    // Append API key for download
+    return `${downloadLink}&key=${getActiveApiKey()}`;
+  } catch (e: any) {
+    console.error("Video generation failed with model:", modelName, e);
+    if (e.message?.includes('403') || e.message?.includes('permission')) {
+        // Try fallback to lite model
+        console.warn("Falling back to veo-3.1-lite-generate-preview due to permission error.");
+        try {
+            let operation = await ai.models.generateVideos({
+                model: 'veo-3.1-lite-generate-preview',
+                prompt: finalPrompt,
+                config: {
+                    numberOfVideos: 1,
+                    resolution: config.resolution as any,
+                    aspectRatio: config.aspectRatio as any
+                }
+            });
+            while (!operation.done) {
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                operation = await ai.operations.getVideosOperation({operation: operation});
+            }
+            const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
+            return downloadLink ? `${downloadLink}&key=${getActiveApiKey()}` : null;
+        } catch (fallbackError) {
+            console.error("Fallback video generation also failed:", fallbackError);
+        }
+        throw new Error("비디오 생성 권한이 없거나 지원하지 않는 모델입니다. (403 Forbidden)");
+    }
+    throw e;
   }
-
-  const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
-  if (!downloadLink) return null;
-
-  // Append API key for download
-  return `${downloadLink}&key=${getActiveApiKey()}`;
 };
 
 // --- Product Photography Services ---
@@ -391,7 +443,32 @@ export const generateProductShot = async (base64Image: string, conceptPrompt: st
         return `data:image/png;base64,${part.inlineData.data}`;
       }
     }
-  } catch (e) {
+  } catch (e: any) {
+    if (e.message?.includes('403') || e.message?.includes('permission')) {
+      console.warn("Falling back to gemini-2.5-flash-image for product shot.");
+      try {
+        const fallbackResponse = await ai.models.generateContent({
+          model: 'gemini-2.5-flash-image',
+          contents: {
+            parts: [
+              { inlineData: { mimeType: mimeType, data: base64Image } },
+              { text: fullPrompt }
+            ]
+          },
+          config: {
+            imageConfig: {
+              aspectRatio: '1:1',
+              imageSize: '1K',
+            }
+          }
+        });
+        for (const part of fallbackResponse.candidates?.[0]?.content?.parts || []) {
+            if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
+        }
+      } catch (fallbackError) {
+        console.error("Fallback product shot failed:", fallbackError);
+      }
+    }
     console.error("Image generation failed", e);
     throw e;
   }
@@ -485,8 +562,24 @@ export const researchProductInfo = async (productName: string): Promise<string |
     });
 
     return response.text;
-  } catch (e) {
+  } catch (e: any) {
     console.error("Product research failed", e);
+    if (e.message?.includes('403') || e.message?.includes('permission')) {
+        console.warn("Falling back to gemini-3-flash-preview for research.");
+        try {
+            const fallbackResponse = await ai.models.generateContent({
+                model: 'gemini-3-flash-preview',
+                contents: prompt,
+                config: {
+                    tools: [{ googleSearch: {} }],
+                    toolConfig: { includeServerSideToolInvocations: true }
+                }
+            });
+            return fallbackResponse.text;
+        } catch (fallbackError) {
+            console.error("Fallback research failed:", fallbackError);
+        }
+    }
     return null;
   }
 };
