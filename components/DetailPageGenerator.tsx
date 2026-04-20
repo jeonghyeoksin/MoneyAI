@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { planDetailPage, generateImage, researchProductInfo } from '../services/geminiService';
-import { DetailPageSection } from '../types';
+import { DetailPageSection, AppView } from '../types';
 import { FileText, Loader2, Image as ImageIcon, Sparkles, AlertCircle, Wand2, Download, Upload, X, Layers, Search } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import FeatureHeader from './common/FeatureHeader';
 
 const DetailPageGenerator: React.FC = () => {
   const [productName, setProductName] = useState('');
@@ -160,14 +161,7 @@ const DetailPageGenerator: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-20">
-      <div className="space-y-2">
-        <h2 className="text-3xl font-bold text-slate-100 flex items-center gap-2">
-          상세페이지 생성 <FileText className="text-amber-500" />
-        </h2>
-        <p className="text-slate-400">
-          세일즈 마케팅 퍼널이 적용된 기획과 <strong>Nano Banana Pro 3.0</strong> 엔진으로 팔리는 상세페이지를 제작합니다.
-        </p>
-      </div>
+      <FeatureHeader view={AppView.DETAIL_PAGE} title="상세페이지 생성" />
 
       {/* Input Section */}
       <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700/50 space-y-6">

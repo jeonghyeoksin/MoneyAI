@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { generateVideo } from '../services/geminiService';
-import { Loader2, Video, Film, AlertCircle } from 'lucide-react';
+import { Loader2, Video, Film, AlertCircle, Type } from 'lucide-react';
+import FeatureHeader from './common/FeatureHeader';
+import { AppView } from '../types';
 
 const VideoCreator: React.FC = () => {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [status, setStatus] = useState<string>('');
+  const [aspectRatio, setAspectRatio] = useState<'16:9' | '9:16'>('16:9');
+  const [includeSubtitles, setIncludeSubtitles] = useState(false);
 
   const handleGenerate = async () => {
     if (!prompt) return;
@@ -16,7 +20,12 @@ const VideoCreator: React.FC = () => {
     
     try {
       setStatus('영상 생성 요청 중... (약 1~2분 소요)');
-      const url = await generateVideo(prompt);
+      const url = await generateVideo({
+        prompt,
+        resolution: '720p',
+        aspectRatio,
+        includeSubtitles
+      });
       if (url) {
         setVideoUrl(url);
         setStatus('완료!');
@@ -33,19 +42,7 @@ const VideoCreator: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="space-y-2">
-            <h2 className="text-3xl font-bold text-slate-100 flex items-center gap-2">
-                유튜브 영상 제작 <span className="text-xs bg-amber-500 text-slate-900 px-2 py-1 rounded font-bold">Veo Powered</span>
-            </h2>
-            <p className="text-slate-400">Google Veo 모델을 사용하여 고퀄리티 영상을 생성합니다.</p>
-        </div>
-        <div className="text-right">
-            <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="text-xs text-slate-500 hover:text-amber-400 underline">
-                Billing Info (Paid Key Required)
-            </a>
-        </div>
-      </div>
+      <FeatureHeader view={AppView.YOUTUBE_VIDEO} title="유튜브 영상 제작" />
 
       <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4 flex items-start gap-3">
         <AlertCircle className="text-blue-400 shrink-0 mt-0.5" size={20} />
@@ -57,15 +54,58 @@ const VideoCreator: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-6 bg-slate-800/50 p-6 rounded-2xl border border-slate-700/50 h-fit">
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">영상 프롬프트</label>
               <textarea 
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="예: 미래 도시의 화려한 네온사인 거리, 드론 뷰, 시네마틱 조명, 4k"
-                className="w-full h-40 bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-200 focus:ring-2 focus:ring-amber-500 outline-none resize-none"
+                className="w-full h-32 bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-200 focus:ring-2 focus:ring-amber-500 outline-none resize-none"
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">화면 비율</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setAspectRatio('16:9')}
+                    className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-all ${
+                      aspectRatio === '16:9' 
+                      ? 'bg-amber-500/20 border-amber-500 text-amber-400' 
+                      : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-600'
+                    }`}
+                  >
+                    16:9 (가로)
+                  </button>
+                  <button
+                    onClick={() => setAspectRatio('9:16')}
+                    className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-all ${
+                      aspectRatio === '9:16' 
+                      ? 'bg-amber-500/20 border-amber-500 text-amber-400' 
+                      : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-600'
+                    }`}
+                  >
+                    9:16 (세로)
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">자막 여부</label>
+                <button
+                  onClick={() => setIncludeSubtitles(!includeSubtitles)}
+                  className={`w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-sm font-medium transition-all ${
+                    includeSubtitles 
+                    ? 'bg-blue-500/20 border-blue-500 text-blue-400' 
+                    : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-600'
+                  }`}
+                >
+                  <Type size={16} />
+                  {includeSubtitles ? '자막 포함됨' : '자막 없음'}
+                </button>
+              </div>
             </div>
             
             <button

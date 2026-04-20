@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { SOURCING_KEYWORDS } from '../constants';
 import { ShoppingBag, Check, Copy, RefreshCw, AlertCircle } from 'lucide-react';
+import FeatureHeader from './common/FeatureHeader';
+import { AppView } from '../types';
 
 const SourcingAssistant: React.FC = () => {
   const [count, setCount] = useState<number | ''>('');
@@ -37,14 +39,7 @@ const SourcingAssistant: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div className="space-y-2">
-        <h2 className="text-3xl font-bold text-slate-100 flex items-center gap-2">
-          오늘 뭐 팔지? <ShoppingBag className="text-amber-500" />
-        </h2>
-        <p className="text-slate-400">
-          검증된 소싱 키워드 데이터베이스에서 무작위 아이템을 추출하여 아이디어를 얻으세요.
-        </p>
-      </div>
+      <FeatureHeader view={AppView.TODAY_ITEM} title="오늘 뭐 팔지? (소싱)" />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Input Section */}

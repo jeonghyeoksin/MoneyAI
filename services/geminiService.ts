@@ -155,7 +155,7 @@ export const generateInstaCarousel = async (topic: string, count: number, style:
   `;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-1.5-pro',
     contents: prompt,
   });
 
@@ -179,7 +179,7 @@ export const generateYoutubePlan = async (topic: string): Promise<string> => {
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview', // Use flash for better compatibility
+      model: 'gemini-1.5-pro',
       contents: prompt,
     });
     return response.text || "생성 실패";
@@ -195,11 +195,14 @@ export const generateImage = async (prompt: string, aspectRatio: string = "1:1",
   if (!apiKey) throw new Error("API Key is missing");
   const ai = new GoogleGenAI({ apiKey });
   
-  // Reverting to gemini-2.5-flash-image for stability as 3.1-flash-image-preview often returns 403
-  const modelName = 'gemini-2.5-flash-image';
+  // Use gemini-1.5-flash for image generation if supported or standard imagen
+  const modelName = 'gemini-1.5-flash'; 
   
-  // Enhance prompt for text rendering and consistency
-  let finalPrompt = `${prompt}, commercial photography, 8k, photorealistic`;
+  // Enhance prompt for text rendering and consistency with extreme emphasis on Korean
+  let finalPrompt = `${prompt}, commercial photography, 8k, photorealistic. 
+    IMPORTANT: If there is text in the image, it MUST be rendered in PERFECT Korean (Hangeul). 
+    Absolutely no broken characters, scrambled glyphs, or typos. 
+    Use a clean, professional Korean font style. The Korean text must be clear and legible.`;
   
   if (prompt.includes('Text "')) {
       finalPrompt += ", professional Korean typography, advertising poster style, clear Korean text rendering, legible Korean font, high contrast text, absolutely no broken characters or typos";
@@ -228,6 +231,7 @@ export const generateImage = async (prompt: string, aspectRatio: string = "1:1",
       config: {
         imageConfig: {
           aspectRatio: aspectRatio as any,
+          imageSize: '1K'
         }
       }
     });
@@ -237,14 +241,23 @@ export const generateImage = async (prompt: string, aspectRatio: string = "1:1",
         return `data:image/png;base64,${part.inlineData.data}`;
       }
     }
-  } catch (e) {
+  } catch (e: any) {
     console.error("Image generation failed", e);
+    // If specific image model fails, try informative error
+    if (e.message?.includes('403') || e.message?.includes('permission')) {
+        throw new Error("이미지 생성 권한이 없거나 유료 API 키가 필요합니다. (403 Permission Denied)");
+    }
     throw e;
   }
   return null;
 };
 
-export const generateVideo = async (prompt: string): Promise<string | null> => {
+export const generateVideo = async (config: {
+  prompt: string;
+  resolution: '720p' | '1080p';
+  aspectRatio: '16:9' | '9:16';
+  includeSubtitles: boolean;
+}): Promise<string | null> => {
   // CRITICAL: Veo requires specific key selection in some environments
   await checkAndSelectApiKey();
   
@@ -253,13 +266,17 @@ export const generateVideo = async (prompt: string): Promise<string | null> => {
   if (!apiKey) throw new Error("API Key is missing");
   const ai = new GoogleGenAI({ apiKey });
 
+  const finalPrompt = config.includeSubtitles 
+    ? `${config.prompt}. Include professional Korean subtitles at the bottom of the screen.`
+    : config.prompt;
+
   let operation = await ai.models.generateVideos({
     model: 'veo-3.1-fast-generate-preview',
-    prompt: prompt,
+    prompt: finalPrompt,
     config: {
       numberOfVideos: 1,
-      resolution: '720p',
-      aspectRatio: '16:9'
+      resolution: config.resolution as any,
+      aspectRatio: config.aspectRatio as any
     }
   });
 
@@ -339,7 +356,7 @@ export const generateProductShot = async (base64Image: string, conceptPrompt: st
   if (!apiKey) throw new Error("API Key is missing");
   const ai = new GoogleGenAI({ apiKey });
 
-  // Prepend instruction to preserve the product
+  // Prepend instruction to preserve the product and ensure Korean quality
   const fullPrompt = `
     Product Photography.
     Main subject: The object in the input image. 
@@ -349,12 +366,12 @@ export const generateProductShot = async (base64Image: string, conceptPrompt: st
     1. Preserve the product's appearance, shape, color, and branding 100%.
     2. High resolution, 1000x1000 pixels.
     3. Photorealistic, 8k, professional studio lighting.
-    4. No text in the background.
+    4. If any text appears, it MUST be perfect Korean (Hangeul) with no artifacts or broken parts. The Korean font should be clean and professional.
   `;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image', // Reverting to stable model
+      model: 'gemini-1.5-flash', 
       contents: {
         parts: [
           { inlineData: { mimeType: mimeType, data: base64Image } },
@@ -364,6 +381,7 @@ export const generateProductShot = async (base64Image: string, conceptPrompt: st
       config: {
         imageConfig: {
           aspectRatio: '1:1',
+          imageSize: '1K',
         }
       }
     });
@@ -402,13 +420,14 @@ export const generateDetailHooks = async (productName: string): Promise<HookCopy
     - 각 문구는 약 300자 내외로 작성하세요.
     - 네이버 스마트스토어, 쿠팡 등에서 잘 팔리는 말투를 사용하세요.
     - 기획서 없이 바로 쓸 수 있도록 완성도 높은 문장으로 제공하세요.
+    - 한국어 맞춤법과 띄어쓰기를 완벽하게 지키세요. 깨진 글자가 없어야 합니다.
     
     결과를 JSON 형식으로 반환하세요.
   `;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-1.5-pro',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
@@ -457,7 +476,7 @@ export const researchProductInfo = async (productName: string): Promise<string |
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview', // Use flash for better compatibility
+      model: 'gemini-1.5-pro', // Use pro for better research quality
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
@@ -549,7 +568,7 @@ export const planDetailPage = async (
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview', // Use flash for better compatibility
+      model: 'gemini-1.5-pro',
       contents: { parts },
       config: {
         systemInstruction: systemInstruction,

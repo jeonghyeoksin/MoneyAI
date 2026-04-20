@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { generateInstaCarousel, generateYoutubePlan, generateNewsletter } from '../services/geminiService';
 import { Loader2, Copy, Check, Wand2, Palette, LayoutGrid, Table, Sun } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import FeatureHeader from './common/FeatureHeader';
+import { AppView } from '../types';
 
 type Mode = 'INSTA' | 'YOUTUBE' | 'NEWSLETTER';
 
@@ -33,15 +35,15 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ mode }) => {
     }
   };
 
-  const getDescription = () => {
+  const getView = () => {
     switch(mode) {
-      case 'INSTA': return '저장과 공유를 부르는 슬라이드별 구성안을 기획합니다.';
-      case 'YOUTUBE': return '조회수를 보장하는 썸네일 전략부터 스크립트 구조까지 설계합니다.';
-      case 'NEWSLETTER': return '구독자의 마음을 사로잡고 클릭을 유도하는 뉴스레터를 작성합니다.';
-      default: return '';
+      case 'INSTA': return AppView.INSTAGRAM;
+      case 'YOUTUBE': return AppView.YOUTUBE_PLAN;
+      case 'NEWSLETTER': return AppView.NEWSLETTER;
+      default: return AppView.DASHBOARD;
     }
   };
-
+  
   const handleGenerate = async () => {
     if (!topic) return;
     setLoading(true);
@@ -73,10 +75,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ mode }) => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div className="space-y-2">
-        <h2 className="text-3xl font-bold text-slate-100">{getTitle()}</h2>
-        <p className="text-slate-400">{getDescription()}</p>
-      </div>
+      <FeatureHeader view={getView()} title={getTitle()} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Input Section */}

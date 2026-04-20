@@ -14,6 +14,7 @@ export interface VideoGenerationConfig {
   prompt: string;
   resolution: '720p' | '1080p';
   aspectRatio: '16:9' | '9:16';
+  includeSubtitles: boolean;
 }
 
 export interface ImageGenerationConfig {

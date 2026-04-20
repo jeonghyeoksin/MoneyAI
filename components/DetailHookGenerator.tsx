@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { generateDetailHooks } from '../services/geminiService';
 import { MessageSquareQuote, Loader2, Copy, Check, Wand2, ArrowRight } from 'lucide-react';
-import { HookCopyResult } from '../types';
+import { HookCopyResult, AppView } from '../types';
+import FeatureHeader from './common/FeatureHeader';
 
 const DetailHookGenerator: React.FC = () => {
   const [productName, setProductName] = useState('');
@@ -32,14 +33,7 @@ const DetailHookGenerator: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      <div className="space-y-2">
-        <h2 className="text-3xl font-bold text-slate-100 flex items-center gap-2">
-          상세페이지 후킹 문구 <MessageSquareQuote className="text-amber-500" />
-        </h2>
-        <p className="text-slate-400">
-          상품명만 입력하세요. 상세페이지 첫 문장에서 고객의 지갑을 여는 3가지 필승 문구를 만들어드립니다.
-        </p>
-      </div>
+      <FeatureHeader view={AppView.DETAIL_HOOK} title="상세페이지 후킹 문구" />
 
       <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700/50">
         <div className="max-w-2xl mx-auto space-y-4">

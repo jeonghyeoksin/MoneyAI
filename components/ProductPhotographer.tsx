@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { Camera, Upload, Loader2, Download, Sparkles, Image as ImageIcon } from 'lucide-react';
 import { planProductConcepts, generateProductShot } from '../services/geminiService';
-import { ProductConcept } from '../types';
+import { ProductConcept, AppView } from '../types';
+import FeatureHeader from './common/FeatureHeader';
 
 interface GeneratedResult {
   concept: ProductConcept;
@@ -109,14 +110,7 @@ const ProductPhotographer: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-      <div className="space-y-2">
-        <h2 className="text-3xl font-bold text-slate-100 flex items-center gap-2">
-          대표 이미지 만들기 <Camera className="text-amber-500" />
-        </h2>
-        <p className="text-slate-400">
-          제품 사진 1장만 올려주세요. 전문 포토그래퍼 AI가 5가지 컨셉의 '팔리는' 대표 이미지를 만들어드립니다.
-        </p>
-      </div>
+      <FeatureHeader view={AppView.PRODUCT_PHOTO} title="대표 이미지 만들기" />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left: Input Section */}
