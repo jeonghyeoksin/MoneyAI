@@ -18,6 +18,7 @@ const DetailPageGenerator: React.FC = () => {
   const [refImages, setRefImages] = useState<string[]>(Array(5).fill(''));
   
   const [isPlanning, setIsPlanning] = useState(false);
+  const [planStatus, setPlanStatus] = useState('');
   const [plan, setPlan] = useState<DetailPageSection[]>([]);
   
   const [generatingImages, setGeneratingImages] = useState<Record<number, boolean>>({});
@@ -76,6 +77,7 @@ const DetailPageGenerator: React.FC = () => {
     }
     
     setIsPlanning(true);
+    setPlanStatus('상품 데이터를 분석하고 있습니다...');
     setPlan([]);
     setGeneratedImages({});
     
@@ -89,7 +91,9 @@ const DetailPageGenerator: React.FC = () => {
           return { base64, mimeType };
         });
 
+      setPlanStatus('세일즈 퍼널 구조에 맞춰 기획안을 작성 중입니다...');
       const sections = await planDetailPage(productName, productInfo, validImages, mode, manualCount);
+      setPlanStatus('완료!');
       setPlan(sections);
     } catch (e: any) {
       console.error(e);
@@ -130,11 +134,19 @@ const DetailPageGenerator: React.FC = () => {
     if (plan.length === 0) return;
     setIsBulkGenerating(true);
     
-    // Process sequentially to avoid rate limits or overwhelming the browser, but effectively "one click" for user
-    for (let i = 0; i < plan.length; i++) {
-        if (!generatedImages[i]) {
-            await handleGenerateImage(i, plan[i].imagePrompt);
-        }
+    // Process in small chunks to speed up while staying within safe API limits
+    const CHUNK_SIZE = 2;
+    for (let i = 0; i < plan.length; i += CHUNK_SIZE) {
+        const chunk = plan.slice(i, i + CHUNK_SIZE);
+        await Promise.all(
+            chunk.map((_, idx) => {
+                const sectionIdx = i + idx;
+                if (!generatedImages[sectionIdx]) {
+                    return handleGenerateImage(sectionIdx, plan[sectionIdx].imagePrompt);
+                }
+                return Promise.resolve();
+            })
+        );
     }
     setIsBulkGenerating(false);
   };
@@ -277,10 +289,15 @@ const DetailPageGenerator: React.FC = () => {
         <button
             onClick={handlePlan}
             disabled={isPlanning || !productName || !productInfo}
-            className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-amber-900/50 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-lg mt-4"
+            className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-amber-900/50 transition-all flex flex-col items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed text-lg mt-4"
         >
-            {isPlanning ? <Loader2 className="animate-spin" /> : <Wand2 size={20} />}
-            {isPlanning ? '세일즈 퍼널 기반 상세페이지 기획 시작' : '세일즈 퍼널 기반 상세페이지 기획 시작'}
+            <div className="flex items-center gap-2">
+                {isPlanning ? <Loader2 className="animate-spin" /> : <Wand2 size={20} />}
+                {isPlanning ? '상세페이지 기획 생성 중...' : '세일즈 퍼널 기반 상세페이지 기획 시작'}
+            </div>
+            {isPlanning && planStatus && (
+                <span className="text-xs font-normal opacity-80 animate-pulse">{planStatus}</span>
+            )}
         </button>
       </div>
 

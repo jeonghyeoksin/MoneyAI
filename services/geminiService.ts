@@ -155,7 +155,7 @@ export const generateInstaCarousel = async (topic: string, count: number, style:
   `;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3.1-pro-preview',
+    model: 'gemini-3-flash-preview',
     contents: prompt,
   });
 
@@ -179,7 +179,7 @@ export const generateYoutubePlan = async (topic: string): Promise<string> => {
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
     });
     return response.text || "생성 실패";
@@ -504,7 +504,7 @@ export const generateDetailHooks = async (productName: string): Promise<HookCopy
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
@@ -536,51 +536,67 @@ export const researchProductInfo = async (productName: string): Promise<string |
   if (!apiKey) throw new Error("API Key is missing");
   const ai = new GoogleGenAI({ apiKey });
   
-  const prompt = `
-    Research the product "${productName}" using Google Search to understand what it is.
-    Identify its key features, selling points, target audience, and main benefits.
+  const searchPrompt = `
+    Research the product "${productName}" using Google Search.
+    Identify its key categories, features, target audience, and unique selling points.
+    Summarize this information in Korean for a professional product detail page planner.
     
-    Then, summarize this information in Korean for a product detail page planner.
+    If you cannot find exact information about this specific brand/item, research similar products in the same category and provide general high-converting selling points.
     
     Format the output as follows:
     - 상품 특징: [List of key features]
     - 타겟 고객: [Who is this for?]
     - 핵심 혜택: [Main benefits to the user]
     - 셀링 포인트: [Why should someone buy this?]
-    
-    Keep it concise but informative.
   `;
 
   try {
+    // 1st Attempt: With Search
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview', // Use pro for better research quality
-      contents: prompt,
+      model: 'gemini-3-flash-preview',
+      contents: { role: 'user', parts: [{ text: searchPrompt }] },
       config: {
         tools: [{ googleSearch: {} }],
         toolConfig: { includeServerSideToolInvocations: true }
       }
     });
 
-    return response.text;
-  } catch (e: any) {
-    console.error("Product research failed", e);
-    if (e.message?.includes('403') || e.message?.includes('permission')) {
-        console.warn("Falling back to gemini-3-flash-preview for research.");
-        try {
-            const fallbackResponse = await ai.models.generateContent({
-                model: 'gemini-3-flash-preview',
-                contents: prompt,
-                config: {
-                    tools: [{ googleSearch: {} }],
-                    toolConfig: { includeServerSideToolInvocations: true }
-                }
-            });
-            return fallbackResponse.text;
-        } catch (fallbackError) {
-            console.error("Fallback research failed:", fallbackError);
-        }
+    if (response.text && response.text.trim().length > 20) {
+      return response.text;
     }
-    return null;
+    
+    // If text is too short or empty, it might have failed to use search correctly
+    throw new Error("Empty search result");
+
+  } catch (e: any) {
+    console.warn("Product research attempt 1 failed, trying without search/fallback", e);
+    
+    // 2nd Attempt: Brainstorm/Fallback (No search tool, less likely to fail due to tool permissions)
+    try {
+      const fallbackPrompt = `
+        당신은 이커머스 전문가입니다. "${productName}"이라는 상품명을 보고, 
+        이 상품이 가진 잠재적인 특징, 타겟 고객, 핵심 혜택, 셀링 포인트를 전문적으로 추측해서 작성해주세요.
+        상세페이지 기획에 바로 사용할 수 있도록 설득력 있게 작성하세요.
+        
+        형식:
+        - 상품 특징: 
+        - 타겟 고객: 
+        - 핵심 혜택: 
+        - 셀링 포인트: 
+      `;
+      
+      const fallbackModel = e.message?.includes('403') ? 'gemini-3-flash-preview' : 'gemini-3.1-pro-preview';
+
+      const response = await ai.models.generateContent({
+        model: fallbackModel,
+        contents: { role: 'user', parts: [{ text: fallbackPrompt }] },
+      });
+
+      return response.text || null;
+    } catch (fallbackError) {
+      console.error("All research attempts failed", fallbackError);
+      return null;
+    }
   }
 };
 
@@ -662,7 +678,7 @@ export const planDetailPage = async (
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
+      model: 'gemini-3-flash-preview',
       contents: { parts },
       config: {
         systemInstruction: systemInstruction,
