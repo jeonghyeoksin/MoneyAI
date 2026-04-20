@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import ContentGenerator from './components/ContentGenerator';
-import VideoCreator from './components/VideoCreator';
 import SourcingAssistant from './components/SourcingAssistant';
 import ProductPhotographer from './components/ProductPhotographer';
 import DetailHookGenerator from './components/DetailHookGenerator';
@@ -99,8 +98,6 @@ const App: React.FC = () => {
         return <ContentGenerator mode="INSTA" />;
       case AppView.YOUTUBE_PLAN:
         return <ContentGenerator mode="YOUTUBE" />;
-      case AppView.YOUTUBE_VIDEO:
-        return <VideoCreator />;
       default:
         return <Dashboard onNavigate={setCurrentView} />;
     }

@@ -2,19 +2,11 @@ export enum AppView {
   DASHBOARD = 'DASHBOARD',
   INSTAGRAM = 'INSTAGRAM',
   YOUTUBE_PLAN = 'YOUTUBE_PLAN',
-  YOUTUBE_VIDEO = 'YOUTUBE_VIDEO',
   TODAY_ITEM = 'TODAY_ITEM',
   PRODUCT_PHOTO = 'PRODUCT_PHOTO',
   DETAIL_HOOK = 'DETAIL_HOOK',
   DETAIL_PAGE = 'DETAIL_PAGE',
   NEWSLETTER = 'NEWSLETTER',
-}
-
-export interface VideoGenerationConfig {
-  prompt: string;
-  resolution: '720p' | '1080p';
-  aspectRatio: '16:9' | '9:16';
-  includeSubtitles: boolean;
 }
 
 export interface ImageGenerationConfig {

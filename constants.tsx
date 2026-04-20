@@ -3,7 +3,6 @@ import {
   LayoutDashboard, 
   Instagram, 
   Youtube, 
-  Video, 
   TrendingUp, 
   DollarSign,
   Users,
@@ -26,7 +25,6 @@ export const MENU_ITEMS = [
   { id: 'NEWSLETTER', label: '뉴스레터 생성', icon: <Mail size={20} /> },
   { id: 'INSTAGRAM', label: '인스타 캐러셀 기획', icon: <Instagram size={20} /> },
   { id: 'YOUTUBE_PLAN', label: '유튜브 콘텐츠 기획', icon: <Youtube size={20} /> },
-  { id: 'YOUTUBE_VIDEO', label: '유튜브 영상 제작', icon: <Video size={20} /> },
 ];
 
 export const MOCK_CHART_DATA = [

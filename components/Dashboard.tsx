@@ -17,7 +17,6 @@ const FEATURE_DESCRIPTIONS: Record<string, string> = {
   NEWSLETTER: "팬덤을 구축하고 구매 전환율을 높이는 매력적인 뉴스레터를 작성합니다.",
   INSTAGRAM: "저장과 공유를 부르는 카드뉴스 구성과 캡션 전략으로 계정을 빠르게 성장시키세요.",
   YOUTUBE_PLAN: "초반 15초 훅(Hook)부터 아웃트로까지, 알고리즘이 선택하는 영상 구조를 설계합니다.",
-  YOUTUBE_VIDEO: "복잡한 장비 없이 텍스트만으로 상상 속의 영상을 고화질로 구현해보세요."
 };
 
 const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
